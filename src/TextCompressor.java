@@ -58,13 +58,13 @@ public class TextCompressor {
             // If the word has already been printed, switch to code mode with escape code if needed
             if (wordStarts.containsKey(word)) {
                 if (charMode) {
-                    switchMode();
+                    switchMode(charMode);
                 }
             }
             // Otherwise switch to char mode with escape code if needed
             else {
                 if (!charMode) {
-                    switchMode();
+                    switchMode(charMode);
                 }
                 BinaryStdOut.write(word);
             }
@@ -89,16 +89,21 @@ public class TextCompressor {
     }
 
     // Method to write out the code to switch the current mode in the binary file
-    private static void switchMode() {
-        BinaryStdOut.write(0, 8);
+    private static void switchMode(boolean isCharMode) {
+        // Length of escape code to be written
+        int length = 8;
+        // If the mode is currently char mode and is to be switched to code mode, alter the length of the escape code
+        if (isCharMode) {
+            length = 6;
+        }
+        BinaryStdOut.write(0, length);
     }
 
-    // If the given String has a special character at the end of it, remove that character
-    private static String cleanWord(String word) {
-        if (Character.isLetter(word.charAt(word.length() - 1))) {
-            return word.substring(0, word.length() - 1);
+    // Write out the word in 6 bit binary codes
+    private static void writeWord(String word) {
+        for (int i = 0; i < word.length(); i++) {
+            BinaryStdOut.write((int)word.charAt(i), 6);
         }
-        return word;
     }
 
     public static void main(String[] args) {
