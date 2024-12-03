@@ -33,16 +33,14 @@ import java.util.LinkedHashMap;
  */
 public class TextCompressor {
 
-    // Length of binary codes representing the first index of the word, and then the length of the word
-    public static final int CODE_LENGTH = 21;
     // Length of header holding length of the text
     public static final int TEXT_LENGTH = 30;
     // Length of binary codes representing the first index of the word
-    public static final int CODE_LENGTH_INDEX = 14;
+    public static final int CODE_LENGTH_INDEX = 16;
     // Length of binary codes representing the length of the word
     public static final int CODE_LENGTH_LEN = 5;
     // Length of the binary codes representing individual chars
-    public static final int LETTER_LENGTH = 6;
+    public static final int LETTER_LENGTH = 8;
     // Boolean to represent if the current mode is writing out characters
     public static boolean charMode = true;
 
@@ -52,7 +50,7 @@ public class TextCompressor {
         // Read in every word in the text version of the binary file into an array
         String text = BinaryStdIn.readString();
         // Read in every word in the text version of the binary file into an array
-        String[] textWords = BinaryStdIn.readString().split(" ");
+        String[] textWords = text.split(" ");
         // Hashmap to hold the first occurrence of every word printed at least once
         HashMap<String, Integer> wordStarts = new LinkedHashMap<>();
 
@@ -89,7 +87,6 @@ public class TextCompressor {
     }
 
     private static void expand() {
-
         // Get the length of the original text from the header of the binary file
         int finalLength = BinaryStdIn.readInt(TEXT_LENGTH);
         // String holding output of compressed binary file
@@ -99,12 +96,39 @@ public class TextCompressor {
         boolean isCharMode = true;
         // Length of binary codes being read in
         int codeLength = LETTER_LENGTH;
-        // Escape code for letter codes
 
-
-        while (text.length() <= finalLength) {
-
+        // Continue while the length of the interpreted text is less than the original length of the text
+        while (text.length() < finalLength) {
+            // If the current mode is set to chars, read in the next 6 bits to get the next char
+            if (isCharMode) {
+                int c = BinaryStdIn.readInt(LETTER_LENGTH);
+                // If the code is an escape code, switch the mode and continue
+                if (c == 0) {
+                    isCharMode = !isCharMode;
+                }
+                // Otherwise add the next character to the text
+                else {
+                    text += (char)c;
+                }
+            }
+            // Otherwise if the current mode is set to word codes, read in the next word code
+            else {
+                // Get the first index of the word in the text
+                int index = BinaryStdIn.readInt(CODE_LENGTH_INDEX);
+                // If the code is an escape code, switch the mode and continue
+                if (index == 0) {
+                    isCharMode = !isCharMode;
+                }
+                // Otherwise read in the next word and add it to the text
+                else {
+                    // Next get the length of the word
+                    int length = BinaryStdIn.readInt(CODE_LENGTH_INDEX);
+                    // Then add the character to the text by using substring to get the first occurrence of the word
+                    text += text.substring(index, index + length);
+                }
+            }
         }
+        BinaryStdOut.write(text);
 
         BinaryStdOut.close();
     }
@@ -120,7 +144,7 @@ public class TextCompressor {
     // Method to write out the code to switch the current mode in the binary file
     private static void switchMode(boolean isCharMode) {
         // Length of escape code to be written
-        int length = CODE_LENGTH;
+        int length = CODE_LENGTH_INDEX;
         // If the mode is currently char mode and is to be switched to code mode, alter the length of the escape code
         if (isCharMode) {
             length = LETTER_LENGTH;
@@ -133,18 +157,10 @@ public class TextCompressor {
 
     // Write out the word in 6 bit binary codes
     private static void writeWord(String word) {
-        // Go through every character in the word, and print each out in
+        // Iterate through every character in the word
         for (int i = 0; i < word.length(); i++) {
-            // Get the next character in the word
-            char c = word.charAt(i);
-            // A-Z will be written as 1-26 respectively
-            if (!Character.isLowerCase(c)) {
-                BinaryStdOut.write((int)c - 64, 6);
-            }
-            // a-z will be written as 27-52 respectively
-            else {
-                BinaryStdOut.write((int)c - 70, 6);
-            }
+            // Write out the next character in the word
+            BinaryStdOut.write(word.charAt(i), LETTER_LENGTH);
         }
     }
 
