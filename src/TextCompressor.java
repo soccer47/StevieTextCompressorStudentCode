@@ -36,7 +36,7 @@ public class TextCompressor {
     // Length of header holding length of the text
     public static final int TEXT_LENGTH = 30;
     // Length of binary codes representing the first index of the word
-    public static final int CODE_LENGTH_INDEX = 16;
+    public static final int CODE_LENGTH_INDEX = 18;
     // Length of binary codes representing the length of the word
     public static final int CODE_LENGTH_LEN = 5;
     // Length of the binary codes representing individual chars
@@ -47,9 +47,9 @@ public class TextCompressor {
 
     private static void compress() {
 
-        // Read in every word in the text version of the binary file into an array
+        // Read in the text version of the binary file into a string
         String text = BinaryStdIn.readString();
-        // Read in every word in the text version of the binary file into an array
+        // Add every word in the text version of the binary file into an array
         String[] textWords = text.split(" ");
         // Hashmap to hold the first occurrence of every word printed at least once
         HashMap<String, Integer> wordStarts = new LinkedHashMap<>();
@@ -95,11 +95,10 @@ public class TextCompressor {
         // Initialized to true because first word cannot have been stated before in text
         boolean isCharMode = true;
         // Length of binary codes being read in
-        int codeLength = LETTER_LENGTH;
 
         // Continue while the length of the interpreted text is less than the original length of the text
         while (text.length() < finalLength) {
-            // If the current mode is set to chars, read in the next 6 bits to get the next char
+            // If the current mode is set to chars, read in the next 8 bits to get the next char
             if (isCharMode) {
                 int c = BinaryStdIn.readInt(LETTER_LENGTH);
                 // If the code is an escape code, switch the mode and continue
@@ -122,7 +121,7 @@ public class TextCompressor {
                 // Otherwise read in the next word and add it to the text
                 else {
                     // Next get the length of the word
-                    int length = BinaryStdIn.readInt(CODE_LENGTH_INDEX);
+                    int length = BinaryStdIn.readInt(CODE_LENGTH_LEN);
                     // Then add the character to the text by using substring to get the first occurrence of the word
                     text += text.substring(index, index + length);
                 }
@@ -135,7 +134,7 @@ public class TextCompressor {
 
     // If the given String has a special character at the end of it, remove that character
     private static String cleanWord(String word) {
-        if (Character.isLetter(word.charAt(word.length() - 1))) {
+        if (!Character.isLetter(word.charAt(word.length() - 1))) {
             return word.substring(0, word.length() - 1);
         }
         return word;
@@ -155,7 +154,7 @@ public class TextCompressor {
         charMode = !charMode;
     }
 
-    // Write out the word in 6 bit binary codes
+    // Write out each letter of the word in 8 bit binary codes
     private static void writeWord(String word) {
         // Iterate through every character in the word
         for (int i = 0; i < word.length(); i++) {
@@ -164,7 +163,7 @@ public class TextCompressor {
         }
     }
 
-    // Write out the word in 6 bit binary codes
+    // Write out the word in a single binary code
     private static void writeCode(int firstIndex, int wordLength) {
         // Write out the index where the word first occurs in the text
         BinaryStdOut.write(firstIndex, CODE_LENGTH_INDEX);
