@@ -33,142 +33,96 @@ import java.util.LinkedHashMap;
  */
 public class TextCompressor {
 
-    // Length of header holding length of the text
-    public static final int TEXT_LENGTH = 30;
-    // Length of binary codes representing the first index of the word
-    public static final int CODE_LENGTH_INDEX = 18;
-    // Length of binary codes representing the length of the word
-    public static final int CODE_LENGTH_LEN = 5;
-    // Length of the binary codes representing individual chars
-    public static final int LETTER_LENGTH = 8;
-    // Boolean to represent if the current mode is writing out characters
-    public static boolean charMode = true;
+    // Number of chars being accounted for (in ASCII value) in input
+    public static final int R = 128;
+    // Length of binary codes representing the codewords
+    public static final int WIDTH = 12;
+    // Integer representing code of EOF
+    public static final int EOF = 128;
+    // Integer representing maximum number of codewords
+    // Initialized to 2^12
+    public static final int MAX_CODES = 4096;
 
 
     private static void compress() {
 
         // Read in the text version of the binary file into a string
         String text = BinaryStdIn.readString();
-        // Add every word in the text version of the binary file into an array
-        String[] textWords = text.split(" ");
-        // Hashmap to hold the first occurrence of every word printed at least once
-        HashMap<String, Integer> wordStarts = new LinkedHashMap<>();
+        // TST holding all the value codes associated with each added character sequence
+        TST codes = new TST();
+        // Integer representing next available code for a String
+        int nextCode = 129;
 
-        // Write out the length of the original String in TEXT_LENGTH characters
-        BinaryStdOut.write(text.length(), TEXT_LENGTH);
+        // Add the first 122 ASCII characters to the TST of codes
+        for (int i = 0; i <= 122; i++) {
+            codes.insert("" + (char)i, i);
+        }
 
+        // String to hold text of the current index
+        String prefix;
 
-        // Go through every word in the text array
-        for (String word : textWords) {
-            // Remove any special characters at the end of the word
-            word = cleanWord(word);
-            // If the word has already been printed, switch to code mode with escape code if needed
-            if (wordStarts.containsKey(word)) {
-                if (charMode) {
-                    switchMode(charMode);
+        // Integer representing the current index being checked in String text
+        int index = 0;
+        // While the end of the text hasn't been reached, continue
+        while (index < text.length()) {
+            // Set the prefix to the String value of the current code
+            prefix = codes.getLongestPrefix(text, index);
+            // Write out the code representing the prefix
+            BinaryStdOut.write(codes.lookup(prefix));
+
+            // Get the next character if possible
+            if (index < text.length() - 1) {
+                prefix = prefix + text.charAt(index + 1);
+                // While there are more codes available for Strings, add the new prefix to the TST of codes
+                if (nextCode < MAX_CODES) {
+                    codes.insert(prefix, nextCode);
                 }
-                // Then print the code referencing the first instance of the word in the String
-                writeCode(wordStarts.get(word), word.length());
-            }
-            // Otherwise write out the word character by character into the binary file
-            else {
-                // Switch to char mode with escape code if needed
-                if (!charMode) {
-                    switchMode(charMode);
-                }
-                // Add the word to the HashMap of already printed words
-                wordStarts.put(word, text.indexOf(word));
-                // Then write out the word into the binary file
-                writeWord(word);
             }
         }
+        // Write out the code signifying the end of the file
+        BinaryStdOut.write(EOF, WIDTH);
 
         BinaryStdOut.close();
     }
 
     private static void expand() {
-        // Get the length of the original text from the header of the binary file
-        int finalLength = BinaryStdIn.readInt(TEXT_LENGTH);
-        // String holding output of compressed binary file
+        // String to hold text to be outputted
         String text = "";
-        // Boolean representing if the current mode being used in the file is reading characters or word codes
-        // Initialized to true because first word cannot have been stated before in text
-        boolean isCharMode = true;
-        // Length of binary codes being read in
+        // TST holding all the value codes associated with each added character sequence
+        TST codes = new TST();
+        // Integer representing next available code for a String
+        int nextCode = 129;
 
-        // Continue while the length of the interpreted text is less than the original length of the text
-        while (text.length() < finalLength) {
-            // If the current mode is set to chars, read in the next 8 bits to get the next char
-            if (isCharMode) {
-                int c = BinaryStdIn.readInt(LETTER_LENGTH);
-                // If the code is an escape code, switch the mode and continue
-                if (c == 0) {
-                    isCharMode = !isCharMode;
-                }
-                // Otherwise add the next character to the text
-                else {
-                    text += (char)c;
-                }
-            }
-            // Otherwise if the current mode is set to word codes, read in the next word code
-            else {
-                // Get the first index of the word in the text
-                int index = BinaryStdIn.readInt(CODE_LENGTH_INDEX);
-                // If the code is an escape code, switch the mode and continue
-                if (index == 0) {
-                    isCharMode = !isCharMode;
-                }
-                // Otherwise read in the next word and add it to the text
-                else {
-                    // Next get the length of the word
-                    int length = BinaryStdIn.readInt(CODE_LENGTH_LEN);
-                    // Then add the character to the text by using substring to get the first occurrence of the word
-                    text += text.substring(index, index + length);
+        // Add the first 122 ASCII characters to the TST of codes
+        for (int i = 0; i <= 122; i++) {
+            codes.insert("" + (char)i, i);
+        }
+
+        // String to hold text of the current index
+        String prefix;
+        // String to hold text of the next index
+        String nextPrefix;
+
+        // Integer representing the current index being checked in String text
+        int index = 0;
+        // While the end of the text hasn't been reached, continue
+        while (index < text.length()) {
+            // Set the prefix to the String associated with the current code
+            prefix = codes.lookup()
+            // Write out the String representing the prefix
+            BinaryStdOut.write(prefix);
+
+            // Get the next character if possible
+            if (index < text.length() - 1) {
+                prefix = prefix + text.charAt(index + 1);
+                // While there are more codes available for Strings, add the new prefix to the TST of codes
+                if (nextCode < MAX_CODES) {
+                    codes.insert(prefix, nextCode);
                 }
             }
         }
-        BinaryStdOut.write(text);
 
         BinaryStdOut.close();
-    }
-
-    // If the given String has a special character at the end of it, remove that character
-    private static String cleanWord(String word) {
-        if (!Character.isLetter(word.charAt(word.length() - 1))) {
-            return word.substring(0, word.length() - 1);
-        }
-        return word;
-    }
-
-    // Method to write out the code to switch the current mode in the binary file
-    private static void switchMode(boolean isCharMode) {
-        // Length of escape code to be written
-        int length = CODE_LENGTH_INDEX;
-        // If the mode is currently char mode and is to be switched to code mode, alter the length of the escape code
-        if (isCharMode) {
-            length = LETTER_LENGTH;
-        }
-        // Write the escape code into the binary file
-        BinaryStdOut.write(0, length);
-        // Switch the mode of being used in the file accordingly
-        charMode = !charMode;
-    }
-
-    // Write out each letter of the word in 8 bit binary codes
-    private static void writeWord(String word) {
-        // Iterate through every character in the word
-        for (int i = 0; i < word.length(); i++) {
-            // Write out the next character in the word
-            BinaryStdOut.write(word.charAt(i), LETTER_LENGTH);
-        }
-    }
-
-    // Write out the word in a single binary code
-    private static void writeCode(int firstIndex, int wordLength) {
-        // Write out the index where the word first occurs in the text
-        BinaryStdOut.write(firstIndex, CODE_LENGTH_INDEX);
-        // Then write out the length of the word
-        BinaryStdOut.write(wordLength, CODE_LENGTH_LEN);
     }
 
     public static void main(String[] args) {
