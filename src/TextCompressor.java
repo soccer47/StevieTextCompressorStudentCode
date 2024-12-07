@@ -21,9 +21,7 @@
  *  = 43.54% compression ratio!
  ******************************************************************************/
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 
 /**
  *  The {@code TextCompressor} class provides static methods for compressing
@@ -54,8 +52,8 @@ public class TextCompressor {
         int nextCode = 129;
 
         // Add the first 122 ASCII characters to the TST of codes
-        for (int i = 0; i <= 122; i++) {
-            codes.insert("" + (char)i, i);
+        for (int i = 32; i <= 122; i++) {
+            codes.insert((char)i + "", i);
         }
 
         // String to hold text of the current index
@@ -68,7 +66,7 @@ public class TextCompressor {
             // Set the prefix to the String value of the current code
             prefix = codes.getLongestPrefix(text, index);
             // Write out the code representing the prefix
-            BinaryStdOut.write(codes.lookup(prefix));
+            BinaryStdOut.write(codes.lookup(prefix), WIDTH);
 
             // Get the next character if possible
             if (index < text.length() - 1) {
@@ -76,8 +74,12 @@ public class TextCompressor {
                 // While there are more codes available for Strings, add the new prefix to the TST of codes
                 if (nextCode < MAX_CODES) {
                     codes.insert(prefix, nextCode);
+                    // Increment nextCode by 1
+                    nextCode++;
                 }
             }
+            // Increment index by one to move to the next char in the text
+            index++;
         }
         // Write out the code signifying the end of the file
         BinaryStdOut.write(EOF, WIDTH);
@@ -86,43 +88,50 @@ public class TextCompressor {
     }
 
     private static void expand() {
-        // String to hold text to be outputted
-        String text = "";
-        // TST holding all the value codes associated with each added character sequence
-        TST codes = new TST();
+
+        // HashMap holding all the value codes associated with each added character sequence
+        HashMap<Integer, String> codes = new HashMap<>();
         // Integer representing next available code for a String
         int nextCode = 129;
 
-        // Add the first 122 ASCII characters to the TST of codes
+        // Add the first 122 ASCII characters to the HashMap of codes
         for (int i = 0; i <= 122; i++) {
-            codes.insert("" + (char)i, i);
+            codes.put(i, "" + (char)i);
         }
+        // Add the EOF code to the HashMap
+        codes.put(EOF, "END_OF_FILE");
 
         // String to hold text of the current index
         String prefix;
         // String to hold text of the next index
         String nextPrefix;
 
-        // Integer representing the current index being checked in String text
-        int index = 0;
+        // Get the first code from the compressed file
+        nextPrefix = codes.get(BinaryStdIn.readInt(WIDTH));
+
         // While the end of the text hasn't been reached, continue
-        while (index < text.length()) {
+        while (true) {
             // Set the prefix to the String associated with the current code
-            prefix = codes.lookup()
+            prefix = nextPrefix;
             // Write out the String representing the prefix
             BinaryStdOut.write(prefix);
 
-            // Get the next character if possible
-            if (index < text.length() - 1) {
-                prefix = prefix + text.charAt(index + 1);
-                // While there are more codes available for Strings, add the new prefix to the TST of codes
+            // Read in the next code, and get the String associated with the code from the HashMap
+            nextPrefix = codes.get(BinaryStdIn.readInt(WIDTH));
+
+            // If the next character is the end of the file character, close out the file
+            if (nextPrefix.equals("END_OF_FILE")) {
+                BinaryStdOut.close();
+            }
+            else {
+                // While there are more codes available for Strings, add the new prefix to the HashMap of codes
                 if (nextCode < MAX_CODES) {
-                    codes.insert(prefix, nextCode);
+                    codes.put(nextCode, prefix + nextPrefix.charAt(0));
+                    // Increment nextCode by 1
+                    nextCode++;
                 }
             }
         }
-
-        BinaryStdOut.close();
     }
 
     public static void main(String[] args) {
