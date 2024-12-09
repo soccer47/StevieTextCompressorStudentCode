@@ -43,7 +43,6 @@ public class TextCompressor {
 
 
     private static void compress() {
-
         // Read in the text version of the binary file into a string
         String text = BinaryStdIn.readString();
         // TST holding all the value codes associated with each added character sequence
@@ -51,20 +50,22 @@ public class TextCompressor {
         // Integer representing next available code for a String
         int nextCode = 129;
 
-        // Add the first 122 ASCII characters to the TST of codes
-        for (int i = 32; i <= 122; i++) {
-            codes.insert((char)i + "", i);
-        }
-
         // String to hold text of the current index
         String prefix;
-
         // Integer representing the current index being checked in String text
         int index = 0;
         // While the end of the text hasn't been reached, continue
         while (index < text.length()) {
             // Set the prefix to the String value of the current code
             prefix = codes.getLongestPrefix(text, index);
+
+            // Check to make sure the current character has been added to the TST already
+            if (prefix.isEmpty()) {
+                // If the character isn't in the TST, set prefix equal to the char
+                prefix = "" + text.charAt(index);
+                // Also add the char to the TST with its ASCII value
+                codes.insert(prefix, text.charAt(index));
+            }
             // Write out the code representing the prefix
             BinaryStdOut.write(codes.lookup(prefix), WIDTH);
 
@@ -94,10 +95,6 @@ public class TextCompressor {
         // Integer representing next available code for a String
         int nextCode = 129;
 
-        // Add the first 122 ASCII characters to the HashMap of codes
-        for (int i = 0; i <= 122; i++) {
-            codes.put(i, "" + (char)i);
-        }
         // Add the EOF code to the HashMap
         codes.put(EOF, "END_OF_FILE");
 
@@ -105,9 +102,15 @@ public class TextCompressor {
         String prefix;
         // String to hold text of the next index
         String nextPrefix;
+        // Integer to hold code of the next prefix
+        int nextPreVal;
 
         // Get the first code from the compressed file
-        nextPrefix = codes.get(BinaryStdIn.readInt(WIDTH));
+        nextPreVal = BinaryStdIn.readInt(WIDTH);
+        // Set nextPrefix equal to the char of the code
+        nextPrefix = "" + (char)nextPreVal;
+        // Add the code-char pair to the HashMap
+        codes.put(nextPreVal, nextPrefix);
 
         // While the end of the text hasn't been reached, continue
         while (true) {
@@ -117,9 +120,18 @@ public class TextCompressor {
             BinaryStdOut.write(prefix);
 
             // Read in the next code, and get the String associated with the code from the HashMap
-            nextPrefix = codes.get(BinaryStdIn.readInt(WIDTH));
+            nextPreVal = BinaryStdIn.readInt(WIDTH);
+            // If the code is already in the Hashmap, set nextPrefix to the String value associated with the code
+            if (codes.containsKey(nextPreVal)) {
+                nextPrefix = codes.get(nextPreVal);
+            }
+            // If not, set nextPrefix equal to the character and add the character to the HashMap
+            else {
+                nextPrefix = "" + (char)nextPreVal;
+                codes.put(nextPreVal, nextPrefix);
+            }
 
-            // If the next character is the end of the file character, close out the file
+            // If the next character is the end of the file character, stop iterating and close out of the file
             if (nextPrefix.equals("END_OF_FILE")) {
                 BinaryStdOut.close();
             }
