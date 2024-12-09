@@ -36,7 +36,7 @@ public class TextCompressor {
     // Length of binary codes representing the codewords
     public static final int WIDTH = 12;
     // Integer representing code of EOF
-    public static final int EOF = 128;
+    public static final int EOF = 256;
     // Integer representing maximum number of codewords
     // Initialized to 2^12
     public static final int MAX_CODES = 4096;
@@ -103,9 +103,6 @@ public class TextCompressor {
         // Integer representing next available code for a String
         int nextCode = R + 1;
 
-        // Add the EOF code to the HashMap
-        codes.put(EOF, "END_OF_FILE");
-
         // String to hold text of the current index
         String prefix;
         // String to hold text of the next index
@@ -129,23 +126,41 @@ public class TextCompressor {
 
             // Read in the next code, and get the String associated with the code from the HashMap
             nextPreVal = BinaryStdIn.readInt(WIDTH);
+            // If the next character is the end of the file code, close out of the file and stop iterating
+            if (nextPreVal == EOF) {
+                BinaryStdOut.close();
+                break;
+            }
+
             // If the code is already in the Hashmap, set nextPrefix to the String value associated with the code
             if (codes.containsKey(nextPreVal)) {
                 nextPrefix = codes.get(nextPreVal);
-            }
-            // If not, set nextPrefix equal to the character and add the character to the HashMap
-            else {
-                nextPrefix = "" + (char)nextPreVal;
-                codes.put(nextPreVal, nextPrefix);
-            }
 
-            // If the next character is the end of the file character, stop iterating and close out of the file
-            if (nextPrefix.equals("END_OF_FILE")) {
-                BinaryStdOut.close();
-            }
-            else {
                 // While there are more codes available for Strings, add the new prefix to the HashMap of codes
                 if (nextCode < MAX_CODES) {
+                    codes.put(nextCode, prefix + nextPrefix.charAt(0));
+                    // Increment nextCode by 1
+                    nextCode++;
+                }
+            }
+            else {
+                // If not, and if the code is for a letter's own ASCII value, add the character to the HashMap
+                if (nextPreVal < R) {
+                    nextPrefix = "" + (char)nextPreVal;
+                    codes.put(nextPreVal, nextPrefix);
+
+                    // While there are more codes available for Strings, add the new prefix to the HashMap of codes
+                    if (nextCode < MAX_CODES) {
+                        codes.put(nextCode, prefix + nextPrefix.charAt(0));
+                        // Increment nextCode by 1
+                        nextCode++;
+                    }
+                }
+                else {
+                    // Otherwise the code is the code being added after the current prefix
+                    // Set the next prefix to itself + its first character
+                    nextPrefix = prefix + prefix.charAt(0);
+                    // Add this new code to the HashMap
                     codes.put(nextCode, prefix + nextPrefix.charAt(0));
                     // Increment nextCode by 1
                     nextCode++;
