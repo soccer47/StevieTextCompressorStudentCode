@@ -70,12 +70,13 @@ public class TextCompressor {
             }
             // Write out the code representing the prefix
             BinaryStdOut.write(codes.lookup(prefix), WIDTH);
+            // Store the current index before it is incremented
+            originalIndex = index;
+            // Increment index by the length of prefix to the next new char in the text
+            index += prefix.length();
 
             // Get the next character if possible
             if (index < text.length() - prefix.length() - 1) {
-                originalIndex = index;
-                // Increment index by the length of prefix to the next new char in the text
-                index += prefix.length();
                 // Get the next character to add to the TST of codes
                 prefix = prefix + text.charAt(originalIndex + prefix.length());
                 // While there are more codes available for Strings, add the new prefix to the TST of codes
@@ -84,10 +85,6 @@ public class TextCompressor {
                     // Increment nextCode by 1
                     nextCode++;
                 }
-            }
-            // Otherwise increment the index by 1
-            else {
-                index++;
             }
         }
         // Write out the code signifying the end of the file
