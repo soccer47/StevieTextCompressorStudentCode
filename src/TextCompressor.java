@@ -32,7 +32,7 @@ import java.util.HashMap;
 public class TextCompressor {
 
     // Number of chars being accounted for (in ASCII value) in input
-    public static final int R = 128;
+    public static final int R = 256;
     // Length of binary codes representing the codewords
     public static final int WIDTH = 12;
     // Integer representing code of EOF
@@ -48,10 +48,12 @@ public class TextCompressor {
         // TST holding all the value codes associated with each added character sequence
         TST codes = new TST();
         // Integer representing next available code for a String
-        int nextCode = 129;
+        int nextCode = R + 1;
 
         // String to hold text of the current index
         String prefix;
+        // Integer to hold current index before any alteration
+        int originalIndex = 0;
         // Integer representing the current index being checked in String text
         int index = 0;
         // While the end of the text hasn't been reached, continue
@@ -70,8 +72,12 @@ public class TextCompressor {
             BinaryStdOut.write(codes.lookup(prefix), WIDTH);
 
             // Get the next character if possible
-            if (index < text.length() - 1) {
-                prefix = prefix + text.charAt(index + 1);
+            if (index < text.length() - prefix.length() - 1) {
+                originalIndex = index;
+                // Increment index by the length of prefix to the next new char in the text
+                index += prefix.length();
+                // Get the next character to add to the TST of codes
+                prefix = prefix + text.charAt(originalIndex + prefix.length());
                 // While there are more codes available for Strings, add the new prefix to the TST of codes
                 if (nextCode < MAX_CODES) {
                     codes.insert(prefix, nextCode);
@@ -79,8 +85,10 @@ public class TextCompressor {
                     nextCode++;
                 }
             }
-            // Increment index by one to move to the next char in the text
-            index++;
+            // Otherwise increment the index by 1
+            else {
+                index++;
+            }
         }
         // Write out the code signifying the end of the file
         BinaryStdOut.write(EOF, WIDTH);
@@ -93,7 +101,7 @@ public class TextCompressor {
         // HashMap holding all the value codes associated with each added character sequence
         HashMap<Integer, String> codes = new HashMap<>();
         // Integer representing next available code for a String
-        int nextCode = 129;
+        int nextCode = R + 1;
 
         // Add the EOF code to the HashMap
         codes.put(EOF, "END_OF_FILE");
